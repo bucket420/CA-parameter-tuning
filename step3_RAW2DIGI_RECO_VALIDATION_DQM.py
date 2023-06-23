@@ -22,8 +22,8 @@ process.load('Configuration.StandardSequences.MagneticField_cff')
 process.load('Configuration.StandardSequences.RawToDigi_cff')
 process.load('Configuration.StandardSequences.Reconstruction_cff')
 process.load('Configuration.StandardSequences.Validation_cff')
-process.load('DQMServices.Core.DQMStoreNonLegacy_cff')
-process.load('DQMOffline.Configuration.DQMOfflineMC_cff')
+# process.load('DQMServices.Core.DQMStoreNonLegacy_cff')
+# process.load('DQMOffline.Configuration.DQMOfflineMC_cff')
 process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_cff')
 
 process.pixelTracksCUDA.CAThetaCutBarrel = cms.double(0.003)
@@ -83,25 +83,25 @@ process.configurationMetadata = cms.untracked.PSet(
 
 # Output definition
 
-process.RECOSIMoutput = cms.OutputModule("PoolOutputModule",
-    dataset = cms.untracked.PSet(
-        dataTier = cms.untracked.string('GEN-SIM-RECO'),
-        filterName = cms.untracked.string('')
-    ),
-    fileName = cms.untracked.string('file:step3.root'),
-    outputCommands = process.RECOSIMEventContent.outputCommands,
-    splitLevel = cms.untracked.int32(0)
-)
+# process.RECOSIMoutput = cms.OutputModule("PoolOutputModule",
+#     dataset = cms.untracked.PSet(
+#         dataTier = cms.untracked.string('GEN-SIM-RECO'),
+#         filterName = cms.untracked.string('')
+#     ),
+#     fileName = cms.untracked.string('file:step3.root'),
+#     outputCommands = process.RECOSIMEventContent.outputCommands,
+#     splitLevel = cms.untracked.int32(0)
+# )
 
-process.DQMoutput = cms.OutputModule("DQMRootOutputModule",
-    dataset = cms.untracked.PSet(
-        dataTier = cms.untracked.string('DQMIO'),
-        filterName = cms.untracked.string('')
-    ),
-    fileName = cms.untracked.string('file:step3_inDQM.root'),
-    outputCommands = process.DQMEventContent.outputCommands,
-    splitLevel = cms.untracked.int32(0)
-)
+# process.DQMoutput = cms.OutputModule("DQMRootOutputModule",
+#     dataset = cms.untracked.PSet(
+#         dataTier = cms.untracked.string('DQMIO'),
+#         filterName = cms.untracked.string('')
+#     ),
+#     fileName = cms.untracked.string('file:step3_inDQM.root'),
+#     outputCommands = process.DQMEventContent.outputCommands,
+#     splitLevel = cms.untracked.int32(0)
+# )
 
 # Additional output definition
 
@@ -118,13 +118,22 @@ process.raw2digi_step = cms.Path(process.RawToDigi_pixelOnly)
 process.reconstruction_step = cms.Path(process.reconstruction_pixelTrackingOnly)
 process.prevalidation_step = cms.Path(process.globalPrevalidationPixelTrackingOnly)
 process.validation_step = cms.EndPath(process.globalValidationPixelTrackingOnly)
-process.dqmoffline_step = cms.EndPath(process.DQMOfflinePixelTracking)
-process.dqmofflineOnPAT_step = cms.EndPath(process.PostDQMOffline)
-process.RECOSIMoutput_step = cms.EndPath(process.RECOSIMoutput)
-process.DQMoutput_step = cms.EndPath(process.DQMoutput)
+# process.dqmoffline_step = cms.EndPath(process.DQMOfflinePixelTracking)
+# process.dqmofflineOnPAT_step = cms.EndPath(process.PostDQMOffline)
+# process.RECOSIMoutput_step = cms.EndPath(process.RECOSIMoutput)
+# process.DQMoutput_step = cms.EndPath(process.DQMoutput)
 
 # Schedule definition
-process.schedule = cms.Schedule(process.raw2digi_step,process.reconstruction_step,process.prevalidation_step,process.validation_step,process.dqmoffline_step,process.dqmofflineOnPAT_step,process.RECOSIMoutput_step,process.DQMoutput_step)
+process.schedule = cms.Schedule(
+    process.raw2digi_step,
+    process.reconstruction_step,
+    process.prevalidation_step,
+    process.validation_step,
+    # process.dqmoffline_step,
+    # process.dqmofflineOnPAT_step,
+    # process.RECOSIMoutput_step,
+    # process.DQMoutput_step
+    )
 from PhysicsTools.PatAlgos.tools.helpers import associatePatAlgosToolsTask
 associatePatAlgosToolsTask(process)
 
