@@ -9,6 +9,21 @@ from Configuration.Eras.Era_Run3_cff import Run3
 from Configuration.ProcessModifiers.pixelNtupletFit_cff import pixelNtupletFit
 from Configuration.ProcessModifiers.gpu_cff import gpu
 
+# import VarParsing
+from FWCore.ParameterSet.VarParsing import VarParsing
+
+# VarParsing instance
+options = VarParsing.VarParsing()
+
+# Custom options
+options.register ('CAThetaCutBarrel',
+              0.003,
+              VarParsing.multiplicity.singleton,
+              VarParsing.varType.double,
+              "CAThetaCutBarrel")
+
+options.parseArguments()
+
 process = cms.Process('RECO',Run3,pixelNtupletFit,gpu)
 
 # import of standard configurations
@@ -26,7 +41,7 @@ process.load('Configuration.StandardSequences.Validation_cff')
 # process.load('DQMOffline.Configuration.DQMOfflineMC_cff')
 process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_cff')
 
-process.pixelTracksCUDA.CAThetaCutBarrel = cms.double(0.003)
+process.pixelTracksCUDA.CAThetaCutBarrel = cms.double(options.CAThetaCutBarrel)
 process.pixelTracksCUDA.CAThetaCutForward = cms.double(0.004)
 process.pixelTracksCUDA.dcaCutInnerTriplet = cms.double(0.16)
 process.pixelTracksCUDA.dcaCutOuterTriplet = cms.double(0.26)
