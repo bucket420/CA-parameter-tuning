@@ -17,7 +17,11 @@ output = subprocess.run(['cmsRun','step3_RAW2DIGI_RECO_VALIDATION_DQM.py',
                 capture_output=True,
                 text=True)
 
-outputLines = StringIO(output.stdout)
+# ouputFile = open("output.txt", "w")
+# ouputFile.write(output.stderr)
+# ouputFile.close()
+
+outputLines = StringIO(output.stderr)
 totalRec=0
 totalAss=0
 while line:=outputLines.readline():
