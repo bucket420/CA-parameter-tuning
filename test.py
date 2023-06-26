@@ -17,15 +17,18 @@ output = subprocess.run(['cmsRun','step3_RAW2DIGI_RECO_VALIDATION_DQM.py',
                 capture_output=True,
                 text=True)
 
-outputLines = StringIO(output)
+outputLines = StringIO(output.stdout)
+totalRec=0
+totalAss=0
 while line:=outputLines.readline():
     if 'Collection' in line:
         line = outputLines.readline()
         line = outputLines.readline()
         line = outputLines.readline()
-        totalRec = int(line.split()[-1])
+        totalRec += int(line.split()[-1])
         line = outputLines.readline()
-        totalAss = int(line.split()[-1])
-        efficiency = totalAss / totalRec
-        print(efficiency)
+        totalAss += int(line.split()[-1])
+
+efficiency = totalAss / totalRec
+print(efficiency)
 
