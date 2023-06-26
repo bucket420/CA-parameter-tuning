@@ -13,7 +13,7 @@ from Configuration.ProcessModifiers.gpu_cff import gpu
 from FWCore.ParameterSet.VarParsing import VarParsing
 
 # VarParsing instance
-options = VarParsing.VarParsing()
+options = VarParsing()
 
 # Custom options
 options.register ('CAThetaCutBarrel',
