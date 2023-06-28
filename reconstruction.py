@@ -301,10 +301,10 @@ taskListSoA = [getattr(process, 'pixelTracksSoA'+str(i)) for i in range(totalTas
 taskList = [getattr(process, 'pixelTracks'+str(i)) for i in range(totalTasks)]
 taskListVal = [getattr(process, 'simpleValidation'+str(i)) for i in range(totalTasks)]
 process.pixelTracksTask = cms.Task(*taskListCUDA, *taskListSoA, *taskList)
-process.simpleValTask = cms.Task(*taskListVal)
+# process.simpleValTask = cms.Task(*taskListVal)
 
 process.pixelTracksSeq = cms.Sequence(process.pixelTracksTask)
-process.simpleValSeq = cms.Sequence(process.simpleValTask)
+process.simpleValSeq = cms.Sequence(sum(taskListVal[1:],taskListVal[0]))
 
 process.preValidation = cms.Sequence(process.tpClusterProducer + process.quickTrackAssociatorByHits)
 # process.tracksValidation = cms.Sequence(process.tpClusterProducer)
