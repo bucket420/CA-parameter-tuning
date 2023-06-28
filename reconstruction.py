@@ -232,8 +232,14 @@ process.trackingParticlePixelTrackAsssociation = cms.EDProducer("TrackAssociator
     label_tr = cms.InputTag("pixelTracks")
 )
 
+process.simpleValidation = cms.EDProducer("SimpleValidation",
+    trackLabels = cms.InputTag("pixelTracks"),
+    trackAssociator = cms.InputTag("trackingParticlePixelTrackAsssociation"),
+    trackingParticles = cms.InputTag("MergedTrackTruth")
+)
+
 process.pixelTracksTask = cms.Task(process.pixelTracks, process.pixelTracksCUDA, process.pixelTracksSoA)
-process.tracksValidation = cms.Sequence(process.tpClusterProducer + process.quickTrackAssociatorByHits + process.trackingParticlePixelTrackAsssociation)
+process.tracksValidation = cms.Sequence(process.tpClusterProducer + process.quickTrackAssociatorByHits + process.trackingParticlePixelTrackAsssociation+process.simpleValidation)
 # process.tracksValidation = cms.Sequence(process.tpClusterProducer)
 # process.tracksValidationSeq = cms.Sequence(process.tracksValidation)
 process.consumer = cms.EDAnalyzer("GenericConsumer", eventProducts = cms.untracked.vstring("tracksValidation"))
