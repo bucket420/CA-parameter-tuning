@@ -182,11 +182,9 @@ process.pixelTracksCUDA = cms.EDProducer("CAHitNtupletCUDAPhase1",
     useSimpleTripletCleaner = cms.bool(True)
 )
 
-process.pixelTracksSoA = SwitchProducerCUDA(
-    cuda = cms.EDProducer("PixelTrackSoAFromCUDAPhase1",
+process.pixelTracksSoA = cms.EDProducer("PixelTrackSoAFromCUDAPhase1",
         mightGet = cms.optional.untracked.vstring,
         src = cms.InputTag("pixelTracksCUDA")
-    )
 )
 
 process.pixelTracks = cms.EDProducer("PixelTrackProducerFromSoAPhase1",
@@ -231,7 +229,7 @@ process.trackingParticlePixelTrackAsssociation = cms.EDProducer("TrackAssociator
 )
 
 process.pixelTracksTask = cms.Task(process.pixelTracks, process.pixelTracksCUDA, process.pixelTracksSoA)
-process.tracksValidation = cms.Task(process.tpClusterProducer, process.quickTrackAssociatorByHits, process.trackingParticlePixelTrackAsssociation)
+process.tracksValidation = cms.Task(process.quickTrackAssociatorByHits, process.tpClusterProducer, process.trackingParticlePixelTrackAsssociation)
 process.consumer = cms.EDAnalyzer("GenericConsumer", eventProducts = cms.untracked.vstring("tracksValidation"))
 
 process.pixel_tracks_step = cms.Path(process.pixelTracksTask)
