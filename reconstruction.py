@@ -119,6 +119,8 @@ from Configuration.AlCa.GlobalTag import GlobalTag
 process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:phase1_2022_realistic', '')
 process.FastTimerService.writeJSONSummary = cms.untracked.bool(True)
 process.FastTimerService.jsonFileName = cms.untracked.string('times.json')
+process.TFileService = cms.Service("TFileService", fileName = cms.string("output.root"))
+
 
 # Create multiple reconstruction and validation objects with parameters in parameters.csv
 totalTasks = 0
