@@ -15,7 +15,7 @@ def objective_function_2(x):
 
 # define the lower and upper bounds
 lb = [0.001, 0.001, 0.01, 0.01] #!!!
-ub = [0.005, 0.005, 1.0, 1.0] #!!!
+ub = [0.005, 0.005, 0.05, 0.05] #!!!
 
 # create the PSO object
 pso = PSO(objective_functions=[objective_function_1, objective_function_2], 
