@@ -15,11 +15,11 @@ def objective_function_2(x):
 
 # define the lower and upper bounds
 lb = [0.001, 0.001, 0.01, 0.01] #!!!
-ub = [0.1, 0.1, 1.0, 1.0] #!!!
+ub = [0.005, 0.005, 1.0, 1.0] #!!!
 
 # create the PSO object
 pso = PSO(objective_functions=[objective_function_1, objective_function_2], 
-          lb=lb, ub=ub, num_particles=100, num_iterations=1, w=0.9, 
+          lb=lb, ub=ub, num_particles=100, num_iterations=3, w=0.9, 
           c1=2, c2=2, max_iter_no_improv=None, tol=None)
 
 # run the optimization algorithm
