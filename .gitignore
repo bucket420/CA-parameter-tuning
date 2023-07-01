@@ -1,8 +1,6 @@
 # *.root
 # *.csv
-*.gif
 # params
 # output
 __pycache__
-gifs
 step2.root
