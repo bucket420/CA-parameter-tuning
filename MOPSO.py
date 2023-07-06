@@ -8,8 +8,8 @@ class Particle:
         self.position = np.random.uniform(lb, ub)
         self.velocity = np.zeros_like(self.position)
         self.best_position = self.position
-        self.best_fitness = [1.0] * num_objectives #inf for minimization
-        self.fitness = [1.0] * num_objectives
+        self.best_fitness = np.ones(num_objectives) #inf for minimization
+        self.fitness = np.ones(num_objectives)
 
     def update_velocity(self, global_best_position, w=0.5, c1=1, c2=1):
         r1 = np.random.uniform(0, 1)
@@ -47,8 +47,7 @@ class PSO:
         self.num_objectives = num_objectives
         self.particles = [Particle(lb, ub) for _ in range(num_particles)]
         self.global_best_position = np.zeros_like(lb)
-        self.global_best_fitness = np.array([1.0, 1.0]) #TODO: you can improve it to be a list of size num_objectives
-        self.history = []
+        self.global_best_fitness = np.ones(num_objectives) #TODO: you can improve it to be a list of size num_objectives
         write_csv('parameters.csv', [self.particles[i].position for i in range(self.num_particles)])   
 
     def optimize(self):
@@ -57,10 +56,16 @@ class PSO:
             write_csv('history/parameters/iteration' + str(i) + '.csv', [self.particles[i].position for i in range(self.num_particles)])
             validation_result = "history/validation/iteration" + str(i) + ".root"
             subprocess.run(['cmsRun','reconstruction.py', "outputFileName=" + validation_result])
+            
             for j, particle in enumerate(self.particles):
                 uproot_file = uproot.open(validation_result)
                 particle.evaluate_fitness(uproot_file, j)
+                
+            pareto_front = self.get_pareto_front()
+            write_csv('history/pareto_front/iteration' + str(i) + '.csv', 
+                      [np.concatenate([pareto_front[i].position, pareto_front[i].fitness]) for i in range(len(pareto_front))])
 
+            for j, particle in enumerate(self.particles):
                 if all(particle.fitness < self.global_best_fitness): 
                     self.global_best_fitness = particle.fitness
                     self.global_best_position = particle.position
@@ -70,27 +75,20 @@ class PSO:
                 
             uproot_file.close()
             write_csv('parameters.csv', [self.particles[i].position for i in range(self.num_particles)])
-            self.history.append(np.concatenate([self.global_best_position, self.global_best_fitness]))
-
-        pareto_front = self.get_pareto_front()
-        
-        write_csv('history/history.csv', self.history)
-        write_csv('history/pareto_front.csv', [np.concatenate([pareto_front[i].position, pareto_front[i].fitness]) 
-                                               for i in range(len(pareto_front))])
 
     def get_pareto_front(self):
         pareto_front = []
         for particle in self.particles:
             dominated = False
             for other_particle in self.particles:
-                if all(particle.fitness >= other_particle.fitness) and any(particle.fitness > other_particle.fitness):
+                if all(particle.fitness > other_particle.fitness):
                     dominated = True
                     break
             if not dominated:
                 pareto_front.append(particle)
         # Sort the Pareto front by crowding distance
-        crowding_distances = self.calculate_crowding_distance(pareto_front)
-        pareto_front.sort(key=lambda x: crowding_distances[x], reverse=True)
+        # crowding_distances = self.calculate_crowding_distance(pareto_front)
+        # pareto_front.sort(key=lambda x: crowding_distances[x], reverse=True)
         return pareto_front
 
     def calculate_crowding_distance(self, pareto_front):
