@@ -80,6 +80,7 @@ class PSO:
         else:
             with open(state_json) as f:
                 self.state = json.load(f)
+            self.state["num_iterations"] = num_iterations
             self.num_particles = self.state["num_particles"]
             self.lb = self.state["lb"]
             self.ub = self.state["ub"]
