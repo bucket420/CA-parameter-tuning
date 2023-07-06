@@ -1,5 +1,6 @@
 import numpy as np
 import subprocess
+import os
 from utils import get_metrics, write_csv
 import uproot
 
@@ -52,6 +53,10 @@ class PSO:
 
     def optimize(self):
         uproot_file = None
+        # clear old data, probably not the best way to do this
+        os.system("rm -rf history/parameters/*")
+        os.system("rm -rf history/validation/*")
+        os.system("rm -rf history/pareto_front/*")
         for i in range(self.num_iterations):
             write_csv('history/parameters/iteration' + str(i) + '.csv', [self.particles[i].position for i in range(self.num_particles)])
             validation_result = "history/validation/iteration" + str(i) + ".root"
