@@ -44,8 +44,8 @@ class Particle:
 
 class PSO:
     def __init__(self, lb, ub, num_objectives=2, num_particles=50, w=0.5, c1=1, c2=1, 
-                 num_iterations=100, state_json=None, max_iter_no_improv=None, tol=None):
-        if not state_json:
+                 num_iterations=100, iscontinue=False, max_iter_no_improv=None, tol=None):
+        if not iscontinue:
             self.num_particles = num_particles
             self.lb = lb
             self.ub = ub
@@ -59,64 +59,61 @@ class PSO:
             self.particles = [Particle(lb, ub) for _ in range(num_particles)]
             self.global_best_position = np.zeros_like(lb)
             self.global_best_fitness = np.ones(num_objectives)
-            self.state = {
+            self.iteration = 0
+            write_csv('parameters.csv', [self.particles[i].position for i in range(self.num_particles)])
+            self.saved_params = {
                 "num_objectives": self.num_objectives,
                 "num_particles": self.num_particles,
-                "num_iterations": self.num_iterations,
-                "max_iter_no_improv": self.max_iter_no_improv,
                 "tol": self.tol,
                 "lb": self.lb,
                 "ub": self.ub,
                 "w": self.w,
                 "c1": self.c1,
                 "c2": self.c2,
-                "global_best_position": self.global_best_position.tolist(),
-                "global_best_fitness": self.global_best_fitness.tolist(),
                 "iteration": 0
             }
-            write_csv('parameters.csv', [self.particles[i].position for i in range(self.num_particles)])
-            with open('history/pso_state.json', 'w') as f:
-                json.dump(self.state, f, indent=4)
+            with open('history/pso_saved_params.json', 'w') as f:
+                json.dump(self.saved_params, f, indent=4)
         else:
-            with open(state_json) as f:
-                self.state = json.load(f)
-            self.state["num_iterations"] = num_iterations
-            self.num_particles = self.state["num_particles"]
-            self.lb = self.state["lb"]
-            self.ub = self.state["ub"]
-            self.w = self.state["w"]
-            self.c1 = self.state["c1"]
-            self.c2 = self.state["c2"]
-            self.num_iterations = self.state["num_iterations"]
-            self.num_objectives = self.state["num_objectives"]
-            self.max_iter_no_improv = self.state["max_iter_no_improv"]
-            self.tol = self.state["tol"]
-            self.global_best_fitness = np.array(self.state["global_best_fitness"], dtype=float)
-            self.global_best_position = np.array(self.state["global_best_position"], dtype=float)
+            with open('history/pso_saved_params.json') as f:
+                self.saved_params = json.load(f)
+            self.num_particles = self.saved_params["num_particles"]
+            self.lb = self.saved_params["lb"]
+            self.ub = self.saved_params["ub"]
+            self.w = self.saved_params["w"]
+            self.c1 = self.saved_params["c1"]
+            self.c2 = self.saved_params["c2"]
+            self.num_objectives = self.saved_params["num_objectives"]
+            self.tol = self.saved_params["tol"]
+            self.num_iterations = num_iterations
+            self.max_iter_no_improv = max_iter_no_improv
+            global_state = read_csv('history/global_state.csv')[0]
             num_params = len(self.lb)
-            particles_state = read_csv('history/particles_state.csv')
+            self.global_best_position = np.array(global_state[:num_params], dtype=float)
+            self.global_best_fitness = np.array(global_state[num_params:-1], dtype=float)
+            self.iteration = int(global_state[-1])
+            individual_states = read_csv('history/individual_states.csv')
             self.particles = [Particle(
                                 lb=self.lb, 
                                 ub=self.ub, 
                                 num_objectives=self.num_objectives,
-                                position=np.array(particles_state[i][:num_params], dtype=float),
-                                velocity=np.array(particles_state[i][num_params:2*num_params], dtype=float),
-                                best_position=np.array(particles_state[i][2*num_params:3*num_params], dtype=float),
-                                best_fitness=np.array(particles_state[i][3*num_params:], dtype=float)
+                                position=np.array(individual_states[i][:num_params], dtype=float),
+                                velocity=np.array(individual_states[i][num_params:2*num_params], dtype=float),
+                                best_position=np.array(individual_states[i][2*num_params:3*num_params], dtype=float),
+                                best_fitness=np.array(individual_states[i][3*num_params:], dtype=float)
                              ) for i in range(self.num_particles)]
             
-
     def optimize(self):
         uproot_file = None
         # clear old data, probably not the best way to do this
-        if not self.state["iteration"]:
+        if not self.iteration:
             os.system("rm -rf history/parameters/*")
             os.system("rm -rf history/validation/*")
             os.system("rm -rf history/pareto_front/*")
             
         for i in range(self.num_iterations):
-            write_csv('history/parameters/iteration' + str(self.state["iteration"]) + '.csv', [self.particles[i].position for i in range(self.num_particles)])
-            validation_result = "history/validation/iteration" + str(self.state["iteration"]) + ".root"
+            write_csv('history/parameters/iteration' + str(self.iteration) + '.csv', [self.particles[i].position for i in range(self.num_particles)])
+            validation_result = "history/validation/iteration" + str(self.iteration) + ".root"
             subprocess.run(['cmsRun','reconstruction.py', "inputFiles=file:step2.root", "parametersFile=parameters.csv", "outputFile=" + validation_result])
             
             for j, particle in enumerate(self.particles):
@@ -128,23 +125,20 @@ class PSO:
             uproot_file.close()
                 
             pareto_front = self.get_pareto_front()
-            write_csv('history/pareto_front/iteration' + str(self.state["iteration"]) + '.csv', 
-                      [np.concatenate([pareto_front[self.state["iteration"]].position, pareto_front[i].fitness]) for i in range(len(pareto_front))])  
+            write_csv('history/pareto_front/iteration' + str(self.iteration) + '.csv', 
+                      [np.concatenate([pareto_front[self.iteration].position, pareto_front[i].fitness]) for i in range(len(pareto_front))])  
 
             for j, particle in enumerate(self.particles):
                 particle.update_velocity(self.global_best_position, self.w, self.c1, self.c2)
                 particle.update_position(self.lb, self.ub)
                 
             write_csv('parameters.csv', [self.particles[i].position for i in range(self.num_particles)])
-            write_csv('history/particles_state.csv', 
+            write_csv('history/individual_states.csv', 
                       [np.concatenate([particle.position, particle.velocity, particle.best_position, particle.best_fitness]) 
                        for particle in self.particles])
 
-            self.state["iteration"] += 1
-            self.state["global_best_position"] = self.global_best_position.tolist()
-            self.state["global_best_fitness"] = self.global_best_fitness.tolist()
-            with open('history/pso_state.json', 'w') as f:
-                json.dump(self.state, f, indent=4)  
+            self.iteration += 1
+            write_csv('history/global_state.csv', [np.concatenate([self.global_best_position, self.global_best_fitness, [self.iteration]])])
 
     def get_pareto_front(self):
         pareto_front = []
