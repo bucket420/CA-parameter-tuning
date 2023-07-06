@@ -3,6 +3,7 @@ import subprocess
 import os
 from utils import get_metrics, write_csv
 import uproot
+import json
 
 class Particle:
     def __init__(self, lb=-10, ub=10, num_objectives=2):
@@ -35,21 +36,34 @@ class Particle:
 
 class PSO:
     def __init__(self, lb, ub, num_objectives=2, num_particles=50, w=0.5, c1=1, c2=1, 
-                 num_iterations=100, max_iter_no_improv=None, tol=None):
-        self.num_particles = num_particles
-        self.lb = lb
-        self.ub = ub
-        self.w = w
-        self.c1 = c1
-        self.c2 = c2
-        self.num_iterations = num_iterations
-        self.max_iter_no_improv = max_iter_no_improv
-        self.tol = tol
-        self.num_objectives = num_objectives
-        self.particles = [Particle(lb, ub) for _ in range(num_particles)]
-        self.global_best_position = np.zeros_like(lb)
-        self.global_best_fitness = np.ones(num_objectives) #TODO: you can improve it to be a list of size num_objectives
-        write_csv('parameters.csv', [self.particles[i].position for i in range(self.num_particles)])   
+                 num_iterations=100, state_json=None, max_iter_no_improv=None, tol=None):
+        if not state_json:
+            self.num_particles = num_particles
+            self.lb = lb
+            self.ub = ub
+            self.w = w
+            self.c1 = c1
+            self.c2 = c2
+            self.num_iterations = num_iterations
+            self.num_objectives = num_objectives
+            self.max_iter_no_improv = max_iter_no_improv
+            self.tol = tol
+            self.particles = [Particle(lb, ub) for _ in range(num_particles)]
+            self.global_best_position = np.zeros_like(lb)
+            self.global_best_fitness = np.ones(num_objectives)
+            write_csv('parameters.csv', [self.particles[i].position for i in range(self.num_particles)]) 
+            json.dumps({
+                "num_objectives": self.num_objectives,
+                "num_particles": self.num_particles,
+                "num_iterations": self.num_iterations
+                
+                
+            })
+        else:
+            pass
+            
+            
+  
 
     def optimize(self):
         uproot_file = None
