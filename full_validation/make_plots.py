@@ -9,10 +9,10 @@ with open("selected_params.csv", "r") as f:
         total_tasks += 1
         dqm_output = "dqm_output" + str(i) + ".root"
         subprocess.run(['cmsRun','full_validation.py', 
-                        'CAThetaCutBarrel=' + float(row[0]), 
-                        'CAThetaCutForward=' + float(row[1]), 
-                        'dcaCutInnerTriplet=' + float(row[2]), 
-                        'dcaCutOuterTriplet=' + float(row[3]), 
+                        'CAThetaCutBarrel=' + row[0], 
+                        'CAThetaCutForward=' + row[1], 
+                        'dcaCutInnerTriplet=' + row[2], 
+                        'dcaCutOuterTriplet=' + row[3], 
                         'dqmOutput=' + dqm_output])
         hist = "hist" + str(i) + ".root"
         subprocess.run(['harvestTrackValidationPlots.py', dqm_output, '-o', hist])
