@@ -6,3 +6,4 @@
 __pycache__
 # gifs
 step2.root
+full_validation/*.root
