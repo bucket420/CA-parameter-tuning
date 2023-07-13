@@ -71,7 +71,7 @@ process.pixelTracksCUDA.dcaCutInnerTriplet = cms.double(options.dcaCutInnerTripl
 process.pixelTracksCUDA.dcaCutOuterTriplet = cms.double(options.dcaCutOuterTriplet)
 
 process.maxEvents = cms.untracked.PSet(
-    input = cms.untracked.int32(100),
+    input = cms.untracked.int32(1000),
     output = cms.optional.untracked.allowed(cms.int32,cms.PSet)
 )
 
@@ -115,7 +115,7 @@ process.options = cms.untracked.PSet(
 
 # Production Info
 process.configurationMetadata = cms.untracked.PSet(
-    annotation = cms.untracked.string('step3 nevts:100'),
+    annotation = cms.untracked.string('step3 nevts:1000'),
     name = cms.untracked.string('Applications'),
     version = cms.untracked.string('$Revision: 1.19 $')
 )
