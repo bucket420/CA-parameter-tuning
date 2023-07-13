@@ -58,7 +58,7 @@ options.register ('dcaCutOuterTriplet',
               "dcaCutOuterTriplet")
 
 options.register ('dqmOutput',
-              "output.root",
+              "default.root",
               VarParsing.multiplicity.singleton,
               VarParsing.varType.string,
               "Output file name")
