@@ -121,17 +121,6 @@ process.configurationMetadata = cms.untracked.PSet(
 )
 
 # Output definition
-
-process.RECOSIMoutput = cms.OutputModule("PoolOutputModule",
-    dataset = cms.untracked.PSet(
-        dataTier = cms.untracked.string('GEN-SIM-RECO'),
-        filterName = cms.untracked.string('')
-    ),
-    fileName = cms.untracked.string('file:step3.root'),
-    outputCommands = process.RECOSIMEventContent.outputCommands,
-    splitLevel = cms.untracked.int32(0)
-)
-
 process.DQMoutput = cms.OutputModule("DQMRootOutputModule",
     dataset = cms.untracked.PSet(
         dataTier = cms.untracked.string('DQMIO'),
@@ -159,11 +148,17 @@ process.prevalidation_step = cms.Path(process.globalPrevalidationPixelTrackingOn
 process.validation_step = cms.EndPath(process.globalValidationPixelTrackingOnly)
 process.dqmoffline_step = cms.EndPath(process.DQMOfflinePixelTracking)
 process.dqmofflineOnPAT_step = cms.EndPath(process.PostDQMOffline)
-process.RECOSIMoutput_step = cms.EndPath(process.RECOSIMoutput)
 process.DQMoutput_step = cms.EndPath(process.DQMoutput)
 
 # Schedule definition
-process.schedule = cms.Schedule(process.raw2digi_step,process.reconstruction_step,process.prevalidation_step,process.validation_step,process.dqmoffline_step,process.dqmofflineOnPAT_step,process.RECOSIMoutput_step,process.DQMoutput_step)
+process.schedule = cms.Schedule(process.raw2digi_step,
+                                process.reconstruction_step,
+                                process.prevalidation_step,
+                                process.validation_step,
+                                process.dqmoffline_step,
+                                process.dqmofflineOnPAT_step,
+                                process.DQMoutput_step)
+
 from PhysicsTools.PatAlgos.tools.helpers import associatePatAlgosToolsTask
 associatePatAlgosToolsTask(process)
 

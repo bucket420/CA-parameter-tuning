@@ -1,12 +1,10 @@
 from csv import reader
 import subprocess
 
-total_tasks = 0
 plot_cmd = ["makeTrackValidationPlots.py", "default.root"]
 with open("selected_params.csv", "r") as f:
     csv_reader = reader(f)
     for i, row in enumerate(csv_reader):
-        total_tasks += 1
         dqm_output = "dqm_output" + str(i) + ".root"
         subprocess.run(['cmsRun','full_validation.py', 
                         'CAThetaCutBarrel=' + row[0], 
