@@ -120,24 +120,14 @@ process.TFileService = cms.Service('TFileService', fileName=cms.string(options.o
                                    if cms.string(options.outputFile) else 'default.root')
 
 
-# Create multiple reconstruction and validation objects with parameters in parameters.csv
-
-params = read_csv(options.parametersFile)
-totalTasks = len(params)
-for i, row in enumerate(params):
-    setattr(process, 'pixelTracksCUDA' + str(i), cms.EDProducer('CAHitNtupletCUDAPhase1',
-            CAThetaCutBarrel = cms.double(float(row[0])),
-            CAThetaCutForward = cms.double(float(row[1])),
-            dcaCutInnerTriplet = cms.double(float(row[2])),
-            dcaCutOuterTriplet = cms.double(float(row[3])),
-            hardCurvCut = cms.double(float(row[4])),
-            z0Cut = cms.double(float(row[5])),
-            phiCuts = cms.vint32(
-                int(row[6]), int(row[7]), int(row[8]), int(row[9]), int(row[10]),
-                int(row[11]), int(row[12]), int(row[13]), int(row[14]), int(row[15]),
-                int(row[16]), int(row[17]), int(row[18]), int(row[19]), int(row[20]),
-                int(row[21]), int(row[22]), int(row[23]), int(row[24])
-            ),
+process.pixelTracksCUDA = cms.EDProducer('CAHitNtupletCUDAPhase1',
+            CAThetaCutBarrel = cms.double(0),
+            CAThetaCutForward =  cms.double(0),
+            dcaCutInnerTriplet =  cms.double(0),
+            dcaCutOuterTriplet =  cms.double(0),
+            hardCurvCut =  cms.double(0),
+            z0Cut =  cms.double(0),
+            phiCuts = cms.vint32(0),
             doClusterCut = cms.bool(True),
             doPtCut = cms.bool(True),
             doSharedHitCut = cms.bool(True),
@@ -171,7 +161,47 @@ for i, row in enumerate(params):
             useRiemannFit = cms.bool(False),
             useSimpleTripletCleaner = cms.bool(True)
         )
-    )
+
+pixelTracksCUDAParams = {
+    'CAThetaCutBarrel' : 0,
+    'CAThetaCutForward' : 1,
+    'dcaCutInnerTriplet' : 2,
+    'dcaCutOuterTriplet' : 3,
+    'hardCurvCut' : 4,
+    'z0Cut' : 5,
+    'phiCuts' : [6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24]
+}
+
+def setParam(process, module_name, param_name, param_value):
+    try:
+        module = getattr(process, module_name)
+    except AttributeError:
+        raise ValueError(f"The module {module_name} doesn't exist")
+    if hasattr(module, param_name):
+        setattr(module, param_name, param_value)
+    else:
+        raise ValueError(f"The parameter {param_name} doesn't exist for moduel {module.label()}")
+
+def repeat(process, module, parameters, parametersFile):
+    params = read_csv(options.parametersFile)
+    totalTasks = len(params)
+    for i, row in enumerate(params):
+        module_name = module.label() + str(i)
+        setattr(process, module_name, module.clone())
+        for param_name, param_value in parameters.items():
+            setParam(process, module_name, param_name, param_value)
+    taskList = [getattr(process, module.label()+str(i)) for i in range(totalTasks)]
+    repeatedTask = cms.Task(*taskList)
+    return repeatedTask
+
+
+# Create multiple reconstruction and validation objects with parameters in parameters.csv
+
+process.pixelTracksCUDATask = repeat(process, process.pixelTracksCUDA, pixelTracksCUDAParams, options.parametersFile)
+
+params = read_csv(options.parametersFile)
+totalTasks = len(params)
+for i, row in enumerate(params):
     setattr(process, 'pixelTracksSoA' + str(i), cms.EDProducer('PixelTrackSoAFromCUDAPhase1',
             mightGet = cms.optional.untracked.vstring,
             src = cms.InputTag('pixelTracksCUDA' + str(i)))
@@ -234,13 +264,13 @@ process.quickTrackAssociatorByHits = cms.EDProducer('QuickTrackAssociatorByHitsP
 )
 
 # Lists of tasks
-taskListCUDA = [getattr(process, 'pixelTracksCUDA'+str(i)) for i in range(totalTasks)]
 taskListSoA = [getattr(process, 'pixelTracksSoA'+str(i)) for i in range(totalTasks)]
 taskList = [getattr(process, 'pixelTracks'+str(i)) for i in range(totalTasks)]
 taskListVal = [getattr(process, 'simpleValidation'+str(i)) for i in range(totalTasks)]
 
 # Tasks and sequences
-process.pixelTracksTask = cms.Task(*taskListCUDA, *taskListSoA, *taskList)
+process.pixelTracksTask = cms.Task(*taskListSoA, *taskList)
+process.pixelTracksCUDASeq = cms.Sequence(process.pixelTracksCUDATask)
 process.pixelTracksSeq = cms.Sequence(process.pixelTracksTask)
 process.preValidation = cms.Sequence(process.tpClusterProducer + process.quickTrackAssociatorByHits)
 process.simpleValSeq = cms.Sequence(sum(taskListVal[1:],taskListVal[0]))
@@ -250,7 +280,7 @@ process.consumer = cms.EDAnalyzer('GenericConsumer', eventProducts = cms.untrack
 # Path and EndPath definitions
 process.raw2digi_step = cms.Path(process.RawToDigi_pixelOnly)
 process.reconstruction_step = cms.Path(process.reconstruction_pixelTrackingOnly)
-process.pixel_tracks_step = cms.Path(process.pixelTracksTask)
+process.pixel_tracks_step = cms.Path(process.pixelTracksCUDATask, process.pixelTracksTask)
 process.pre_validation_step = cms.Path(process.preValidation)
 process.validation_step = cms.Path(process.simpleValSeq)
 process.consume_step = cms.EndPath(process.consumer)
