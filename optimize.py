@@ -10,6 +10,7 @@ import os
 parser = argparse.ArgumentParser()
 parser.add_argument('-c', '--continuing', type=int, action='store')
 parser.add_argument('-d', '--default', action='store_true')
+parser.add_argument('-s', '--strips', action='store_true')
 parser.add_argument('-p2', '--phase2', action='store_true')
 parser.add_argument('-p', '--num_particles', default=200, type=int, action='store')
 parser.add_argument('-i', '--num_iterations', default=20, type=int, action='store')
@@ -33,18 +34,33 @@ if args.phase2:
           1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000]
     
     config = 'reconstruction_phase2.py'
-    input_file = 'input/step2_phase2.root'
+    #config = 'reconstruction_phase2_hlt.py'
+    input_file = 'file:../023b71b9-1d38-4891-b5e6-d584032d2cc4.root'
+        #'file:/gpu_data/store/mc/Phase2Spring23DIGIRECOMiniAOD/TT_TuneCP5_14TeV-powheg-pythia8/GEN-SIM-DIGI-RAW-MINIAOD/PU200_Trk1GeV_131X_mcRun4_realistic_v5-v1/b75e209e-741d-4561-8516-9d63339bc0b7.root',
+       # 'file:/gpu_data/store/mc/Phase2Spring23DIGIRECOMiniAOD/TT_TuneCP5_14TeV-powheg-pythia8/GEN-SIM-DIGI-RAW-MINIAOD/PU200_Trk1GeV_131X_mcRun4_realistic_v5-v1/ba603e93-3ee7-4e53-ab37-335d6ff55d3d.root
+elif args.strips:
+    lb = [0.0, 0.0, 0.0, 0.0, 1.0 / 3.8 / 0.9, 5.0, 400,
+                      400, 400, 400, 400, 400, 400, 400, 400, 400,
+                                400, 400, 400, 400, 400, 400, 400, 400, 400,400, 400, 400, 400,400, 400, 400, 400,400, 400, 400, 400,400, 400, 400, 400]
+
+    ub = [0.006, 0.03, 0.2, 1.0, 1.0 / 3.8 / 0.3, 20.0, 900,
+                          900, 900, 900, 900, 900, 900, 900, 900, 900, 900, 900, 900, 900, 900, 900, 900, 900, 900, 900, 900, 900, 900, 900, 900, 900,
+                                    900, 900, 900, 900, 900, 900, 900, 900, 900]
+
+    config = 'reconstruction_strips.py'
+    input_file = "run3_130X_mcRun3_2022_realistic_v2.root"
+
 else:
     lb = [0.0, 0.0, 0.0, 0.0, 1.0 / 3.8 / 0.9, 5.0, 400, 
           400, 400, 400, 400, 400, 400, 400, 400, 400, 
           400, 400, 400, 400, 400, 400, 400, 400, 400]
 
-    ub = [0.006, 0.03, 0.2, 1.0, 1.0 / 3.8 / 0.3, 20.0, 1000,
-          1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 
-          1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000]
+    ub = [0.006, 0.03, 0.2, 1.0, 1.0 / 3.8 / 0.3, 20.0, 900,
+          900, 900, 900, 900, 900, 900, 900, 900, 900, 
+          900, 900, 900, 900, 900, 900, 900, 900, 900]
     
-    config = 'reconstruction.py'
-    input_file = 'input/step2.root'
+    config = 'reconstruction_hion_offline.py'
+    input_file = "../RAWHydjet2023Official/59e7e816-23bd-4488-86bf-d8521c36e330.root" #'input/step2.root'
 
 # run pixel reconstruction and simple validation
 def reco_and_validate(params):
@@ -86,8 +102,7 @@ if args.default:
 if not args.continuing:
     os.system('rm history/*')
     pso = MOPSO(objective_functions=[reco_and_validate],lower_bounds=lb, upper_bounds=ub, 
-                num_objectives=2, num_particles=args.num_particles, num_iterations=args.num_iterations, 
-                inertia_weight=0.5, cognitive_coefficient=1, social_coefficient=1, 
+                num_objectives=2, num_particles=args.num_particles, num_iterations=args.num_iterations,  
                 max_iter_no_improv=None, optimization_mode='global')
 else:
     pso = MOPSO(objective_functions=[reco_and_validate],lower_bounds=lb, upper_bounds=ub, 

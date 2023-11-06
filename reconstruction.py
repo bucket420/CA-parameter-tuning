@@ -6,7 +6,7 @@
 import FWCore.ParameterSet.Config as cms
 from utils import read_csv
 
-from Configuration.Eras.Era_Run3_cff import Run3
+from Configuration.Eras.Era_Run3_pp_on_PbPb_cff import Run3_pp_on_PbPb
 from Configuration.ProcessModifiers.pixelNtupletFit_cff import pixelNtupletFit
 from Configuration.ProcessModifiers.gpu_cff import gpu
 
@@ -37,7 +37,7 @@ options.register('nEvents',
 
 options.parseArguments()
 
-process = cms.Process('RECO',Run3,pixelNtupletFit,gpu)
+process = cms.Process('RECO',Run3_pp_on_PbPb,pixelNtupletFit,gpu)
 
 # import of standard configurations
 process.load('Configuration.StandardSequences.Services_cff')
@@ -158,15 +158,15 @@ for i, row in enumerate(params):
             ptCut = cms.double(0.5),
             ptmin = cms.double(0.8999999761581421),
             trackQualityCuts = cms.PSet(
-                chi2Coeff = cms.vdouble(0.9, 1.8),
-                chi2MaxPt = cms.double(10),
-                chi2Scale = cms.double(8),
-                quadrupletMaxTip = cms.double(0.5),
-                quadrupletMaxZip = cms.double(12),
-                quadrupletMinPt = cms.double(0.3),
-                tripletMaxTip = cms.double(0.3),
-                tripletMaxZip = cms.double(12),
-                tripletMinPt = cms.double(0.5)
+                chi2MaxPt = cms.double( 10.0 ),
+                tripletMaxTip = cms.double( 0.3 ),
+                chi2Scale = cms.double( 1.8 ),
+                quadrupletMaxTip = cms.double( 0.5 ),
+                quadrupletMinPt = cms.double( 0.1 ),
+                quadrupletMaxZip = cms.double( 12.0 ),
+                tripletMaxZip = cms.double( 12.0 ),
+                tripletMinPt = cms.double( 0.1 ),
+                chi2Coeff = cms.vdouble( 0.9, 1.8 )
             ),
             useRiemannFit = cms.bool(False),
             useSimpleTripletCleaner = cms.bool(True)
