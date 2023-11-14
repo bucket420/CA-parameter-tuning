@@ -1,4 +1,7 @@
 import numpy as np
+from inspect import getmro
+import FWCore.ParameterSet.Config as cms
+from FWCore.ParameterSet.Mixins import _Parameterizable 
 
 # calculate the metrics from validation results
 def get_metrics(uproot_file, id):
@@ -24,3 +27,35 @@ def read_csv(filename):
 # write a matrix to a csv file
 def write_csv(filename, matrix):
     np.savetxt(filename, matrix, fmt='%.18f', delimiter=',')
+
+def has_params(typ):
+    return _Parameterizable in getmro(typ)
+
+def new_names(names,inputs,i):
+    new_names_for_module = {}
+    # print(names)
+    for p in names:
+        
+        thisParam = names[p]
+        thisType = type(thisParam)
+
+        if has_params(thisType): #if has params go recursive! This is a PSet
+            # print(p," has params")
+            old_names_for_param = thisParam.parameters_()
+            new_names_for_param = new_names(old_names_for_param,inputs,i)
+            new_names_for_module[p] = cms.PSet()
+            new_names_for_module[p].setValue(new_names_for_param)
+        else: #this is simple, either an InputTag or VInputTag
+            if thisType == type(cms.InputTag("")):
+                # print(p," normal ")
+                for mod in inputs:
+                    if mod == thisParam.value().split(":")[0]: ## check needed for complex InputTags
+                        new_val = thisParam.value().replace(mod,mod+str(i))
+                        new_names_for_module[p] = cms.InputTag(new_val)
+            elif thisType == type(cms.VInputTag("")):
+                vinput = [v + str(i) if v in inputs else v for v in names[p].value()]
+                new_names_for_module[p] = cms.VInputTag(vinput)
+            else:
+                # print(p, "the same")
+                new_names_for_module[p] = names[p]
+    return new_names_for_module

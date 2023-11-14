@@ -11,7 +11,8 @@ parser = argparse.ArgumentParser()
 parser.add_argument('-c', '--continuing', type=int, action='store')
 parser.add_argument('-d', '--default', action='store_true')
 parser.add_argument('-s', '--strips', action='store_true')
-parser.add_argument('-p2', '--phase2', action='store_true')
+parser.add_argument('-p2','--phase2', action='store_true')
+parser.add_argument('-hlt','--hlt', action='store_true')
 parser.add_argument('-p', '--num_particles', default=200, type=int, action='store')
 parser.add_argument('-i', '--num_iterations', default=20, type=int, action='store')
 parser.add_argument('-e', '--num_events', default=100, type=int, action='store')
@@ -39,16 +40,30 @@ if args.phase2:
         #'file:/gpu_data/store/mc/Phase2Spring23DIGIRECOMiniAOD/TT_TuneCP5_14TeV-powheg-pythia8/GEN-SIM-DIGI-RAW-MINIAOD/PU200_Trk1GeV_131X_mcRun4_realistic_v5-v1/b75e209e-741d-4561-8516-9d63339bc0b7.root',
        # 'file:/gpu_data/store/mc/Phase2Spring23DIGIRECOMiniAOD/TT_TuneCP5_14TeV-powheg-pythia8/GEN-SIM-DIGI-RAW-MINIAOD/PU200_Trk1GeV_131X_mcRun4_realistic_v5-v1/ba603e93-3ee7-4e53-ab37-335d6ff55d3d.root
 elif args.strips:
-    lb = [0.0, 0.0, 0.0, 0.0, 1.0 / 3.8 / 0.9, 5.0, 400,
-                      400, 400, 400, 400, 400, 400, 400, 400, 400,
-                                400, 400, 400, 400, 400, 400, 400, 400, 400,400, 400, 400, 400,400, 400, 400, 400,400, 400, 400, 400,400, 400, 400, 400]
+    lb = [0.0, 0.0, 0.0, 0.0, 1.0 / 3.8 / 0.9, 5.0, 500,
+                      500, 500, 500, 500, 500, 500, 500, 500, 500, 500,
+                                500, 500, 500, 500, 500, 500, 500, 500, 500,500, 500, 500, 500,500, 500, 500, 500,500, 500, 500, 500,500, 500, 500, 500]
 
     ub = [0.006, 0.03, 0.2, 1.0, 1.0 / 3.8 / 0.3, 20.0, 900,
                           900, 900, 900, 900, 900, 900, 900, 900, 900, 900, 900, 900, 900, 900, 900, 900, 900, 900, 900, 900, 900, 900, 900, 900, 900,
-                                    900, 900, 900, 900, 900, 900, 900, 900, 900]
+                                900, 900, 900, 900, 900, 900, 900, 900, 900, 900]
 
     config = 'reconstruction_strips.py'
-    input_file = "run3_130X_mcRun3_2022_realistic_v2.root"
+    input_file = "file:/data/user/adiflori/ttbar_2023/2023D/00930c1c-4923-410a-8394-a0eea37a4114.root"
+elif args.hlt:
+
+    lb = [0.0, 0.0, 0.0, 0.0, 1.0 / 3.8 / 0.9, 5.0, 400, 
+          400, 400, 400, 400, 400, 400, 400, 400, 400, 
+          400, 400, 400, 400, 400, 400, 400, 400, 400]
+
+    ub = [0.006, 0.03, 0.2, 1.0, 1.0 / 3.8 / 0.3, 20.0, 900,
+          900, 900, 900, 900, 900, 900, 900, 900, 900, 
+          900, 900, 900, 900, 900, 900, 900, 900, 900]
+    
+    config = 'reconstruction_2023_hlt.py'
+    #config = 'reconstruction_2022_hlt.py'
+    input_file = "file:/data/user/adiflori/ttbar_2023/2023D/404d4977-faf2-45d4-8a01-7fdeed9cf611.root" #'input/step2.root'
+    #input_file = "file:/data/user/adiflori/ttbar_2023/2023C/7056f9b8-115d-4b49-ab5b-6c5d7056ca22.root"
 
 else:
     lb = [0.0, 0.0, 0.0, 0.0, 1.0 / 3.8 / 0.9, 5.0, 400, 
@@ -81,7 +96,7 @@ phi0p07 = 730
 phi0p09 = 900
 
 # get default metrics
-if args.default:
+if args.default: ##TODO USE NPAAIRS FOR PHI
     if args.phase2:
         default_params = [[0.0020000000949949026, 0.003000000026077032, 0.15000000596046448, 0.25, 0.03284072249589491, 7.5,
                            phi0p05, phi0p05, phi0p05, phi0p06, phi0p07, phi0p07, phi0p06, phi0p07, phi0p07, phi0p05, phi0p05,
@@ -100,7 +115,7 @@ if args.default:
         
 # create the PSO object
 if not args.continuing:
-    os.system('rm history/*')
+    #os.system('rm history/*')
     pso = MOPSO(objective_functions=[reco_and_validate],lower_bounds=lb, upper_bounds=ub, 
                 num_objectives=2, num_particles=args.num_particles, num_iterations=args.num_iterations,  
                 max_iter_no_improv=None, optimization_mode='global')
