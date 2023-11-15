@@ -59,3 +59,7 @@ def new_names(names,inputs,i):
                 # print(p, "the same")
                 new_names_for_module[p] = names[p]
     return new_names_for_module
+
+def expand_process(params,tune,chain,target):
+    
+    pass

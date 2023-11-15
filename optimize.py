@@ -82,10 +82,14 @@ def reco_and_validate(params):
     if not os.path.exists('temp'):
         os.mkdir('temp')
     write_csv('temp/parameters.csv', params)
+
     validation_result = 'temp/simple_validation.root'
     subprocess.run(['cmsRun', config, 'inputFiles=file:' + input_file, 'nEvents=' + str(args.num_events),
                      'parametersFile=temp/parameters.csv', 'outputFile=' + validation_result])
     num_particles = len(params)
+    #print(num_particles)
+    #print(params)
+    #print(bdsihcs)
     with uproot.open(validation_result) as uproot_file:
         population_fitness = [get_metrics(uproot_file, i) for i in range(num_particles)]
     return population_fitness
@@ -108,7 +112,9 @@ if args.default: ##TODO USE NPAAIRS FOR PHI
         default_params = [[0.0020000000949949026, 0.003000000026077032, 0.15000000596046448, 0.25, 0.03284072249589491, 
                            12.0, phi0p05, phi0p07, phi0p07, phi0p05, phi0p06, phi0p06, phi0p05, phi0p05, phi0p06, 
                            phi0p06, phi0p06, phi0p05, phi0p05, phi0p05, phi0p05, phi0p05, phi0p05, phi0p05, phi0p05]]
-        
+
+    #print(len(default_params))  
+    pring()
     default_metrics = reco_and_validate(default_params)
     write_csv('checkpoint/default.csv', [np.concatenate([default_params[0], default_metrics[0]])])
 
