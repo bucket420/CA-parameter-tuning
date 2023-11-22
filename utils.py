@@ -1,7 +1,28 @@
 import numpy as np
 from inspect import getmro
-import FWCore.ParameterSet.Config as cms
-from FWCore.ParameterSet.Mixins import _Parameterizable 
+import sys
+import os
+import warnings
+from itertools import cycle
+
+spinner = cycle('-/|\\')
+
+def spinning(): ##doesn't work
+    print(next(spinner),flush=True,end="")
+    os.sleep(0.05)
+    sys.stdout.write("\r")
+
+with warnings.catch_warnings():
+    warnings.filterwarnings("ignore",category=DeprecationWarning)
+    import imp
+
+try:
+    from FWCore.ParameterSet.Mixins import _Parameterizable, _ValidatingParameterListBase
+    import FWCore.ParameterSet.Config as cms
+    from FWCore.ParameterSet.MassReplace import MassSearchReplaceAnyInputTagVisitor
+    from HLTrigger.Configuration.common import modules_by_type
+except:
+    print("Working without CMS modules")
 
 # calculate the metrics from validation results
 def get_metrics(uproot_file, id):
@@ -21,45 +42,158 @@ def get_metrics(uproot_file, id):
 def read_csv(filename):
     matrix = np.genfromtxt(filename, delimiter=",", dtype=float)
     if matrix.ndim == 2:
-        return np.genfromtxt(filename, delimiter=",", dtype=float)
-    return np.array([matrix])
+        return matrix
+    else:
+        return np.array([matrix])
     
 # write a matrix to a csv file
 def write_csv(filename, matrix):
     np.savetxt(filename, matrix, fmt='%.18f', delimiter=',')
 
+### cmsRun specific helpers
+
+def parseProcess(filename): 
+  # from https://github.com/cms-patatrack/patatrack-scripts/blob/master/multirun.py
+  # parse the given configuration file and return the `process` object it define
+  # the import logic is taken from edmConfigDump
+  try:
+    handle = open(filename, 'r')
+  except:
+    print("Failed to open %s: %s" % (filename, sys.exc_info()[1]))
+    sys.exit(1)
+
+  # make the behaviour consistent with 'cmsRun file.py'
+  sys.path.append(os.getcwd())
+  try:
+    pycfg = imp.load_source('pycfg', filename, handle)
+    process = pycfg.process
+  except:
+    print("Failed to parse %s: %s" % (filename, sys.exc_info()[1]))
+    sys.exit(1)
+
+  handle.close()
+  return process
+
 def has_params(typ):
     return _Parameterizable in getmro(typ)
 
-def new_names(names,inputs,i):
-    new_names_for_module = {}
-    # print(names)
-    for p in names:
+def is_v_input(typ):
+    return _ValidatingParameterListBase in getmro(typ)
+
+def chain_update(process,inputs,tune,modules):
+
+    taskList = []
+    for i,_ in enumerate(inputs):
         
-        thisParam = names[p]
-        thisType = type(thisParam)
+        replace = {}
+        # define replacers for all
+        for f in modules + tune:
+            replace[f] = MassSearchReplaceAnyInputTagVisitor(f, f+str(i), verbose=False) # True to see all the renamings
+            # create new ith module
+            if f not in tune: #we have already taken care of the modules to tune
+                setattr(process, f + str(i), getattr(process,f).clone()) 
 
-        if has_params(thisType): #if has params go recursive! This is a PSet
-            # print(p," has params")
-            old_names_for_param = thisParam.parameters_()
-            new_names_for_param = new_names(old_names_for_param,inputs,i)
-            new_names_for_module[p] = cms.PSet()
-            new_names_for_module[p].setValue(new_names_for_param)
-        else: #this is simple, either an InputTag or VInputTag
-            if thisType == type(cms.InputTag("")):
-                # print(p," normal ")
-                for mod in inputs:
-                    if mod == thisParam.value().split(":")[0]: ## check needed for complex InputTags
-                        new_val = thisParam.value().replace(mod,mod+str(i))
-                        new_names_for_module[p] = cms.InputTag(new_val)
-            elif thisType == type(cms.VInputTag("")):
-                vinput = [v + str(i) if v in inputs else v for v in names[p].value()]
-                new_names_for_module[p] = cms.VInputTag(vinput)
-            else:
-                # print(p, "the same")
-                new_names_for_module[p] = names[p]
-    return new_names_for_module
+        #apply replacement for all the ith modules, with all the (other) ith modules
+        for m in modules:
+            module = getattr(process,m + str(i))
+            for f in modules + tune:
+                if f != m: # not realy needed
+                    replace[f].doIt(module, m + str(i))
+            taskList.append(module)
 
-def expand_process(params,tune,chain,target):
+        for t in tune:
+            taskList.append(getattr(process,t + str(i)))
+            
+    process.mainTask = cms.Task(*taskList)
+    process.mainPath = cms.Path(process.mainTask)
+
+    process.schedule.extend([process.mainPath])
+    return process
+
+def remove_outputs(process):
+
+    for s in process.endpaths_():#.keys():   
+        process.schedule.remove(getattr(process,s))
+
+    return process
+
+def add_validation(process,inputs,target):
+
+    # Here we assume that the process we have given in input has already the 
+    # validation and the prevalidation well defined and so we just track
+    # back wich hit associator we need to use
+    hitassoc = ""
+    for f in modules_by_type(process,"TrackAssociatorEDProducer"):
+        #print(getattr(f,"label_tr"))
+        if getattr(f,"label_tr").value() == target:
+            hitassoc = getattr(f,"associator").value()
+            break
     
-    pass
+    taskList = []
+    for i,_ in enumerate(inputs):
+        
+        # All these params may be copied from the MTV defined in the process
+        name = 'simpleValidation' + str(i)
+        setattr(process, name, cms.EDAnalyzer('SimpleValidation',
+                chargedOnlyTP = cms.bool(True),
+                intimeOnlyTP = cms.bool(False),
+                invertRapidityCutTP = cms.bool(False),
+                lipTP = cms.double(30.0),
+                maxPhi = cms.double(3.2),
+                maxRapidityTP = cms.double(2.5),
+                minHitTP = cms.int32(0),
+                minPhi = cms.double(-3.2),
+                minRapidityTP = cms.double(-2.5),
+                pdgIdTP = cms.vint32(),
+                ptMaxTP = cms.double(1e+100),
+                ptMinTP = cms.double(0.9),
+                signalOnlyTP = cms.bool(True),
+                stableOnlyTP = cms.bool(False),
+                tipTP = cms.double(3.5),
+                trackLabels = cms.VInputTag(target + str(i)),
+                trackAssociator = cms.untracked.InputTag(hitassoc),
+                trackingParticles = cms.InputTag('mix', 'MergedTrackTruth')               
+            )
+        )
+
+        taskList.append(getattr(process, name))
+
+    process.simpleValidationSeq = cms.Sequence(sum(taskList[1:],taskList[0]))
+    process.simpleValidationPath = cms.EndPath(process.simpleValidationSeq)
+    process.schedule.extend([process.simpleValidationPath])
+
+    return process
+    
+def modules_tuning(process,inputs,params,tune):
+    
+    for i, row in enumerate(inputs):
+        modules_to_tune = [getattr(process,t).clone() for t in tune]
+        enum_p = iter(enumerate(params))
+        n = 0
+        for p in params:
+            for m in modules_to_tune:
+                this_params = m.parameters_()
+                if p in this_params:
+                    par = this_params[p]
+                    if is_v_input(type(par)):
+                        l = len(par.value())
+                        setattr(m,p,[int(row[n+i]) for i in range(l)])
+                    else:
+                        l = 1
+                        setattr(m,p,row[n])
+            n = n + 1
+        for n,m in zip(tune,modules_to_tune):
+            setattr(process,n+str(i),m)
+        
+    return process
+   
+def expand_process(process,inputs,params,tune,chain,target):
+    
+    process = remove_outputs(process) #check for all EndPaths 
+    process = modules_tuning(process,inputs,params,tune)
+    process = add_validation(process,inputs,target)
+    process = chain_update(process,inputs,tune,chain+[target])
+    
+
+    return process
+            

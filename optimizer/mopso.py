@@ -22,6 +22,7 @@ import os
 import copy
 import json
 import random
+from tqdm import tqdm 
 
 class Particle:
     """
@@ -364,11 +365,11 @@ class MOPSO:
         if checkpoint_dir:
             self.save_attributes(checkpoint_dir)
             
-        for i in range(self.num_iterations):
-            print(">>> Iteration no. ",i)
+        for i in tqdm(range(self.num_iterations)):
+            
             if self.optimization_mode == 'global':
-                optimization_output = [objective_function([particle.position for
-                                                           particle in self.particles])
+                optimization_output = [objective_function(params = [particle.position for
+                                                           particle in self.particles], iter = i)
                                        for objective_function in self.objective_functions]
             for p_id, particle in enumerate(self.particles):
                 if self.optimization_mode == 'individual':

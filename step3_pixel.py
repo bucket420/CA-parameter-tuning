@@ -2,14 +2,14 @@
 # using: 
 # Revision: 1.19 
 # Source: /local/reps/CMSSW/CMSSW/Configuration/Applications/python/ConfigBuilder.py,v 
-# with command line options: step3 -s RAW2DIGI:RawToDigiTask_trackerOnly,RECO:reconstruction_pixelTrackingOnly,VALIDATION:@pixelTrackingOnlyValidation,DQM:@pixelTrackingOnlyDQM --conditions auto:phase1_2022_realistic --datatier GEN-SIM-RECO,DQMIO -n 10 --eventcontent RECOSIM,DQM --geometry DB:Extended --era Run3 --procModifiers pixelNtupletFit,gpu --filein file:step2.root --no_exec
+# with command line options: step3 -s RAW2DIGI:RawToDigi_pixelOnly,RECO:reconstruction_pixelTrackingOnly,VALIDATION:@pixelTrackingOnlyValidation,DQM:@pixelTrackingOnlyDQM --conditions auto:phase1_2023_realistic --datatier GEN-SIM-RECO,MINIAODSIM,NANOAODSIM,DQMIO -n 10 --eventcontent RECOSIM,MINIAODSIM,NANOEDMAODSIM,DQM --geometry DB:Extended --era Run3_2023 --procModifiers pixelNtupletFit,gpu --filein file:step2.root --fileout file:step3.root --no_exec
 import FWCore.ParameterSet.Config as cms
 
-from Configuration.Eras.Era_Run3_cff import Run3
+from Configuration.Eras.Era_Run3_2023_cff import Run3_2023
 from Configuration.ProcessModifiers.pixelNtupletFit_cff import pixelNtupletFit
 from Configuration.ProcessModifiers.gpu_cff import gpu
 
-process = cms.Process('RECO',Run3,pixelNtupletFit,gpu)
+process = cms.Process('RECO',Run3_2023,pixelNtupletFit,gpu)
 
 # import of standard configurations
 process.load('Configuration.StandardSequences.Services_cff')
@@ -83,9 +83,90 @@ process.RECOSIMoutput = cms.OutputModule("PoolOutputModule",
         dataTier = cms.untracked.string('GEN-SIM-RECO'),
         filterName = cms.untracked.string('')
     ),
-    fileName = cms.untracked.string('step3_RAW2DIGI_RECO_VALIDATION_DQM.root'),
+    fileName = cms.untracked.string('file:step3.root'),
     outputCommands = process.RECOSIMEventContent.outputCommands,
     splitLevel = cms.untracked.int32(0)
+)
+
+process.MINIAODSIMoutput = cms.OutputModule("PoolOutputModule",
+    compressionAlgorithm = cms.untracked.string('LZMA'),
+    compressionLevel = cms.untracked.int32(4),
+    dataset = cms.untracked.PSet(
+        dataTier = cms.untracked.string('MINIAODSIM'),
+        filterName = cms.untracked.string('')
+    ),
+    dropMetaData = cms.untracked.string('ALL'),
+    eventAutoFlushCompressedSize = cms.untracked.int32(-900),
+    fastCloning = cms.untracked.bool(False),
+    fileName = cms.untracked.string('file:step3_inMINIAODSIM.root'),
+    outputCommands = process.MINIAODSIMEventContent.outputCommands,
+    overrideBranchesSplitLevel = cms.untracked.VPSet(
+        cms.untracked.PSet(
+            branch = cms.untracked.string('patPackedCandidates_packedPFCandidates__*'),
+            splitLevel = cms.untracked.int32(99)
+        ),
+        cms.untracked.PSet(
+            branch = cms.untracked.string('recoGenParticles_prunedGenParticles__*'),
+            splitLevel = cms.untracked.int32(99)
+        ),
+        cms.untracked.PSet(
+            branch = cms.untracked.string('patTriggerObjectStandAlones_slimmedPatTrigger__*'),
+            splitLevel = cms.untracked.int32(99)
+        ),
+        cms.untracked.PSet(
+            branch = cms.untracked.string('patPackedGenParticles_packedGenParticles__*'),
+            splitLevel = cms.untracked.int32(99)
+        ),
+        cms.untracked.PSet(
+            branch = cms.untracked.string('patJets_slimmedJets__*'),
+            splitLevel = cms.untracked.int32(99)
+        ),
+        cms.untracked.PSet(
+            branch = cms.untracked.string('recoVertexs_offlineSlimmedPrimaryVertices__*'),
+            splitLevel = cms.untracked.int32(99)
+        ),
+        cms.untracked.PSet(
+            branch = cms.untracked.string('recoVertexs_offlineSlimmedPrimaryVerticesWithBS__*'),
+            splitLevel = cms.untracked.int32(99)
+        ),
+        cms.untracked.PSet(
+            branch = cms.untracked.string('recoCaloClusters_reducedEgamma_reducedESClusters_*'),
+            splitLevel = cms.untracked.int32(99)
+        ),
+        cms.untracked.PSet(
+            branch = cms.untracked.string('EcalRecHitsSorted_reducedEgamma_reducedEBRecHits_*'),
+            splitLevel = cms.untracked.int32(99)
+        ),
+        cms.untracked.PSet(
+            branch = cms.untracked.string('EcalRecHitsSorted_reducedEgamma_reducedEERecHits_*'),
+            splitLevel = cms.untracked.int32(99)
+        ),
+        cms.untracked.PSet(
+            branch = cms.untracked.string('recoGenJets_slimmedGenJets__*'),
+            splitLevel = cms.untracked.int32(99)
+        ),
+        cms.untracked.PSet(
+            branch = cms.untracked.string('patJets_slimmedJetsPuppi__*'),
+            splitLevel = cms.untracked.int32(99)
+        ),
+        cms.untracked.PSet(
+            branch = cms.untracked.string('EcalRecHitsSorted_reducedEgamma_reducedESRecHits_*'),
+            splitLevel = cms.untracked.int32(99)
+        )
+    ),
+    overrideInputFileSplitLevels = cms.untracked.bool(True),
+    splitLevel = cms.untracked.int32(0)
+)
+
+process.NANOEDMAODSIMoutput = cms.OutputModule("PoolOutputModule",
+    compressionAlgorithm = cms.untracked.string('LZMA'),
+    compressionLevel = cms.untracked.int32(9),
+    dataset = cms.untracked.PSet(
+        dataTier = cms.untracked.string('NANOAODSIM'),
+        filterName = cms.untracked.string('')
+    ),
+    fileName = cms.untracked.string('file:step3_inNANOEDMAODSIM.root'),
+    outputCommands = process.NANOAODSIMEventContent.outputCommands
 )
 
 process.DQMoutput = cms.OutputModule("DQMRootOutputModule",
@@ -93,7 +174,7 @@ process.DQMoutput = cms.OutputModule("DQMRootOutputModule",
         dataTier = cms.untracked.string('DQMIO'),
         filterName = cms.untracked.string('')
     ),
-    fileName = cms.untracked.string('step3_RAW2DIGI_RECO_VALIDATION_DQM_inDQM.root'),
+    fileName = cms.untracked.string('file:step3_inDQM.root'),
     outputCommands = process.DQMEventContent.outputCommands,
     splitLevel = cms.untracked.int32(0)
 )
@@ -106,20 +187,22 @@ process.mix.digitizers = cms.PSet()
 for a in process.aliases: delattr(process, a)
 process.RandomNumberGeneratorService.restoreStateLabel=cms.untracked.string("randomEngineStateProducer")
 from Configuration.AlCa.GlobalTag import GlobalTag
-process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:phase1_2022_realistic', '')
+process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:phase1_2023_realistic', '')
 
 # Path and EndPath definitions
-process.raw2digi_step = cms.Path(process.RawToDigiTask_trackerOnly)
+process.raw2digi_step = cms.Path(process.RawToDigi_pixelOnly)
 process.reconstruction_step = cms.Path(process.reconstruction_pixelTrackingOnly)
 process.prevalidation_step = cms.Path(process.globalPrevalidationPixelTrackingOnly)
 process.validation_step = cms.EndPath(process.globalValidationPixelTrackingOnly)
 process.dqmoffline_step = cms.EndPath(process.DQMOfflinePixelTracking)
 process.dqmofflineOnPAT_step = cms.EndPath(process.PostDQMOffline)
 process.RECOSIMoutput_step = cms.EndPath(process.RECOSIMoutput)
+process.MINIAODSIMoutput_step = cms.EndPath(process.MINIAODSIMoutput)
+process.NANOEDMAODSIMoutput_step = cms.EndPath(process.NANOEDMAODSIMoutput)
 process.DQMoutput_step = cms.EndPath(process.DQMoutput)
 
 # Schedule definition
-process.schedule = cms.Schedule(process.raw2digi_step,process.reconstruction_step,process.prevalidation_step,process.validation_step,process.dqmoffline_step,process.dqmofflineOnPAT_step,process.RECOSIMoutput_step,process.DQMoutput_step)
+process.schedule = cms.Schedule(process.raw2digi_step,process.reconstruction_step,process.prevalidation_step,process.validation_step,process.dqmoffline_step,process.dqmofflineOnPAT_step,process.RECOSIMoutput_step,process.MINIAODSIMoutput_step,process.NANOEDMAODSIMoutput_step,process.DQMoutput_step)
 from PhysicsTools.PatAlgos.tools.helpers import associatePatAlgosToolsTask
 associatePatAlgosToolsTask(process)
 
