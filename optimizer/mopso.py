@@ -302,8 +302,11 @@ class MOPSO:
         with open(checkpoint_dir + '/pso_attributes.json') as f:
             pso_attributes = json.load(f)
         global_state = np.genfromtxt(checkpoint_dir + '/global_state.csv', delimiter=',', dtype=float)
-        individual_states =  np.genfromtxt(checkpoint_dir + '/individual_states.csv', delimiter=',', dtype=float)
+        individual_states = np.genfromtxt(checkpoint_dir + '/individual_states.csv', delimiter=',', dtype=float)
+        individual_states = individual_states if individual_states.ndim == 2 else np.array([individual_states])
+
         pareto_front = np.genfromtxt(checkpoint_dir + '/pareto_front.csv', delimiter=',', dtype=float)
+        pareto_front = pareto_front if pareto_front.ndim == 2 else np.array([pareto_front])
         self.history = np.genfromtxt(checkpoint_dir + '/history.csv', delimiter=',', dtype=float).tolist()
         
         # restore pso attributes

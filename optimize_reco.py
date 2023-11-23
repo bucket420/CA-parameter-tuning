@@ -2,7 +2,7 @@
 from optimizer.mopso import MOPSO
 import subprocess
 import itertools
-from utils import get_metrics, write_csv, parseProcess, spinner
+from utils import get_metrics, write_csv, parseProcess, spinner, read_csv
 from graphs import convert_to_graph, from_modules_to_module
 import numpy as np
 import uproot
@@ -16,30 +16,39 @@ import sys
 from pathlib import Path
 from termcolor import colored
 from functools import partial
+from datetime import datetime
+
+#from reco_optimizer import RecoTuner future
 
 import FWCore.ParameterSet.Config as cms
 
 # parsing argument
 parser = argparse.ArgumentParser()
-parser.add_argument('config')
 
 allowed_recos = ("tracks","hgcal")
+
+is_continuing = '--continuing' in sys.argv
+
+if not is_continuing:
+    parser.add_argument('config', help = "Config to tune.")
+## Optimizer parameters
+parser.add_argument('-p', '--num_particles', default=100, type=int, action='store',help = "Number of agents to spawn by the MOPSO optimizer.")
+parser.add_argument('-i', '--num_iterations', default=100, type=int, action='store',help = "Number of iterations to be run by MOPSO optimizer.")
+parser.add_argument('-c', '--continuing', type=int, action='store')
+parser.add_argument('-d', '--dir', type=str, action='store', help = "Directory where to continue.", required = is_continuing)  
+parser.add_argument('-b', '--bounds', nargs=2,help='Mins',default=(5,5))
+parser.add_argument('--check', action='store_true', help = "Run the config once before the optimizer.")
+
 ## cmsRun parameters
-parser.add_argument('-t','--tune', nargs='+', help='List of modules to tune.', required=True)
-parser.add_argument('-v','--validate', type=str, help='Target module to validate.', required=True)
-parser.add_argument('--pars', nargs='+', help='Parameters to tune. \n These may be given as a list of parameters names or a file with the names separated by a ",".', required=True)
+parser.add_argument('-t','--tune', nargs='+', help='List of modules to tune.', required = not is_continuing)
+parser.add_argument('-v','--validate', type=str, help='Target module to validate.', required = not is_continuing)
+parser.add_argument('--pars', nargs='+', help='Parameters to tune. \n These may be given as a list of parameters names or a file with the names separated by a ",".', required = not is_continuing)
 parser.add_argument('-j', '--num_threads', default=8, type=int, action='store')
 parser.add_argument('-e', '--num_events', default=100, type=int, action='store')
 parser.add_argument('-f', '--input_file', nargs='+', default=["file:step2.root"])
 parser.add_argument('--reco', nargs='?', choices=allowed_recos,help='Type of reco to be run %s.'%repr(allowed_recos)) # to be implemented
 parser.add_argument('-T', '--timing', action='store_true', help = "Add timing/throughput for the pareto front.")
 
-## Optimizer parameters
-parser.add_argument('-p', '--num_particles', default=100, type=int, action='store',help = "Number of agents to spawn by the MOPSO optimizer.")
-parser.add_argument('-i', '--num_iterations', default=100, type=int, action='store',help = "Number of iterations to be run by MOPSO optimizer.")
-parser.add_argument('-c', '--continuing', type=int, action='store') 
-parser.add_argument('-b', '--bounds', nargs=2,help='Mins',default=(5,5))
-parser.add_argument('--check', action='store_true', help = "Run the config once before the optimizer.")
 args = parser.parse_args()
 
 # run pixel reconstruction and simple validation
@@ -96,10 +105,12 @@ def print_logo():
 
 def copy_to_unique(c):
 
-    b = "./optimize."+c.replace(".py","")+"_"+str(random.getrandbits(64))
+    formatted_date = datetime.now().strftime("%Y%m%d.%H%M%S")
+    b = "./optimize."+c.replace(".py","")+"_"+formatted_date #str(random.getrandbits(64))
     os.mkdir(b)
     shutil.copy(c,b+"/"+c)
     shutil.copy("utils.py",b)
+    shutil.copy(os.path.basename(__file__),b)
     os.chdir(b)
     
 
@@ -107,11 +118,24 @@ if __name__ == "__main__":
     
     print_logo()
     input_files = [ "file:" + os.path.abspath(f[5:]) if f.startswith("file:") else f for f in args.input_file ]
-
-    config_input = args.config
+    start_dir = os.getcwd()
     config_to_run = 'process_to_run.py'
     config_to_graph = 'process_zero.py'
-    start_dir = os.getcwd()
+
+    if args.continuing:
+        os.chdir(args.dir)
+        print_headers("> Continuing the optimization in folder: %s"%args.dir)
+
+        n_particles = len(read_csv("temp/parameters.csv"))
+        objective = partial(reco_and_validate, config = config_to_run)
+        pso = MOPSO(objective_functions=[objective],
+                    lower_bounds=read_csv("lb.csv")[0], upper_bounds=read_csv("ub.csv"), 
+                    num_iterations=args.continuing, 
+                    checkpoint_dir='checkpoint')
+        pso.optimize(history_dir= 'history', checkpoint_dir='checkpoint')
+        sys.exit(0)
+    
+    config_input = args.config
     ## Move to the new hashed folder
 
     copy_to_unique(config_input)
@@ -126,9 +150,9 @@ if __name__ == "__main__":
     print("> > Module to validate\t:",module_to_valid)
     print("> > Input file(s)\t:",input_files)
 
+    # recotuner = RecoTuner(files = input_files, args)
 
     print_headers("> Running with 0 events to build the graph")
-
     dot_to_run = config_input.replace("py","dot")
     process_zero = parseProcess(config_input)
     ## This is just to get the dependecy graph
@@ -215,10 +239,13 @@ if __name__ == "__main__":
     for f in list(default_values.values()):
         dv = dv + f if hasattr(f, "__len__") else dv + [f]
 
-    # Dumping values for the records
+    # Dumping value dictionaries for the records
     pd.DataFrame(default_values).to_json("default_values.json")
     pd.DataFrame(params_bounds["High"]).to_json("high_values.json")
     pd.DataFrame(params_bounds["Low"]).to_json("low_values.json")
+    # Dumping lower bounds and upper bounds for "continuing option"
+    write_csv("lb.csv",lb)
+    write_csv("ub.csv",ub)
 
     with open(config_to_run, 'w') as new:
         
@@ -253,7 +280,7 @@ if __name__ == "__main__":
             job = subprocess.Popen(['cmsRun', config_to_run, "parametersFile=default_values.csv"], cwd=workdir, stderr=stderr, stdout=stdout)
             job.communicate()
     
-    print_headers("> Ready to go, running the optimizer!\n")
+    print_headers("> Ready to go, running the optimizer!")
     print("> > Number of agents    :",args.num_particles)
     print("> > Number of iterations:",args.num_iterations)
 
