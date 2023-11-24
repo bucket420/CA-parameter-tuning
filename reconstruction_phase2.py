@@ -18,7 +18,7 @@ options = VarParsing('analysis')
 
 # Custom options
 options.register('parametersFile',
-              'temp/parameters.csv',
+'phase2_cuts.csv',
               VarParsing.multiplicity.singleton,
               VarParsing.varType.string,
               'Name of parameters file')
@@ -37,7 +37,7 @@ options.register('nEvents',
 
 options.parseArguments()
 
-process = cms.Process('RECO',Phase2C17I13M9,pixelNtupletFit,gpu)
+process = cms.Process('RECOX',Phase2C17I13M9,pixelNtupletFit,gpu)
 
 # import of standard configurations
 process.load('Configuration.StandardSequences.Services_cff')
@@ -166,7 +166,7 @@ for i, row in enumerate(params):
             fitNas4 = cms.bool(False),
             idealConditions = cms.bool(False),
             includeFarForwards = cms.bool(True),
-            includeJumpingForwardDoublets = cms.bool(True),
+            includeJumpingForwardDoublets = cms.bool(False),
             lateFishbone = cms.bool(False),
             maxNumberOfDoublets = cms.uint32(2621440),
             mightGet = cms.optional.untracked.vstring,
@@ -284,7 +284,7 @@ from PhysicsTools.PatAlgos.tools.helpers import associatePatAlgosToolsTask
 associatePatAlgosToolsTask(process)
 
 #Setup FWK for multithreaded
-process.options.numberOfThreads = 1
+process.options.numberOfThreads = 8
 process.options.numberOfStreams = 0
 
 # customisation of the process.
